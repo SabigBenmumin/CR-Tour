@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("ATHLETE") // ADMIN, ATHLETE
+  stamina       Float     @default(10.0)
+  totalPoints   Float     @default(0.0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tournaments   TournamentParticipant[]
+  matchesAsPlayer1 Match[] @relation("Player1")
+  matchesAsPlayer2 Match[] @relation("Player2")
+  matchesAsWitness Match[] @relation("Witness")
+  matchesAsReferee Match[] @relation("Referee")
+  matchesWon       Match[] @relation("Winner")
+  staminaLogs   StaminaLog[]
+  witnessRequests WitnessRequest[]
+}
+
+model Tournament {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  status      String    @default("DRAFT") // DRAFT, OPEN, CLOSED, IN_PROGRESS, COMPLETED, CANCELLED
+  minPlayers  Int       @default(8)
+  maxPlayers  Int       @default(32)
+  location    String?
+  lat         Float?
+  lng         Float?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  participants TournamentParticipant[]
+  matches      Match[]
+}
+
+model TournamentParticipant {
+  id           String     @id @default(cuid())
+  userId       String
+  tournamentId String
+  group        String?
+  joinedAt     DateTime   @default(now())
+  
+  user         User       @relation(fields: [userId], references: [id])
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+
+  @@unique([userId, tournamentId])
+}
+
+model Match {
+  id           String    @id @default(cuid())
+  tournamentId String
+  player1Id    String?
+  player2Id    String?
+  winnerId     String?
+  score        String?
+  status       String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  round        Int       @default(1)
+  
+  refereeId    String?
+  witnessId    String?
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  player1      User?      @relation("Player1", fields: [player1Id], references: [id])
+  player2      User?      @relation("Player2", fields: [player2Id], references: [id])
+  winner       User?      @relation("Winner", fields: [winnerId], references: [id])
+  referee      User?      @relation("Referee", fields: [refereeId], references: [id])
+  witness      User?      @relation("Witness", fields: [witnessId], references: [id])
+  
+  verificationStatus String @default("PENDING") // PENDING, WAITING_FOR_WITNESS, CONFIRMED, DISPUTED
+  witnessRequests WitnessRequest[]
+}
+
+model WitnessRequest {
+  id        String   @id @default(cuid())
+  matchId   String
+  userId    String
+  status    String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, EXPIRED
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  match     Match    @relation(fields: [matchId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model StaminaLog {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Float
+  reason    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model SystemConfig {
+  key   String @id
+  value String
+}
