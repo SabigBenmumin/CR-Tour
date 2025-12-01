@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+    web:
+        build:
+            context: .
+            dockerfile: Dockerfile.dev
+        container_name: tennis-tournament-dev
+        ports:
+            - "3000:3000"
+        volumes:
+            # Mount source code for hot reload
+            - ./src:/app/src
+            - ./public:/app/public
+            - ./prisma:/app/prisma
+            # Prevent overwriting node_modules
+            - /app/node_modules
+            - /app/.next
+        environment:
+            - NODE_ENV=development
+            - DATABASE_URL=file:./dev.db
+            - NEXTAUTH_SECRET=supersecretkey123
+            - NEXTAUTH_URL=http://localhost:3000
+        env_file:
+            - .env.local
+        command: sh -c "npx prisma migrate deploy && npm run dev"
+        restart: unless-stopped
+        stdin_open: true
+        tty: true
+# Optional: Add database service if migrating to PostgreSQL
+# Uncomment below to use PostgreSQL instead of SQLite
+#
+#  db:
+#    image: postgres:16-alpine
+#    container_name: tennis-tournament-db
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgres
+#      POSTGRES_DB: tennis_tournament
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    restart: unless-stopped
+#
+#volumes:
+#  postgres_data:

@@ -1,0 +1,84 @@
+name: Deploy
+
+on:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Deployment environment"
+                required: true
+                default: "production"
+                type: choice
+                options:
+                    - production
+                    - staging
+    workflow_run:
+        workflows: ["Docker Build and Push"]
+        types:
+            - completed
+        branches: [main]
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+        environment:
+            name: ${{ inputs.environment || 'production' }}
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            # ========================================
+            # DEPLOYMENT STEPS - CUSTOMIZE FOR YOUR PLATFORM
+            # ========================================
+
+            # Example for Render.com
+            # - name: Deploy to Render
+            #   run: |
+            #     curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+            # Example for Railway.app
+            # - name: Deploy to Railway
+            #   run: |
+            #     curl -X POST "${{ secrets.RAILWAY_WEBHOOK_URL }}"
+
+            # Example for DigitalOcean App Platform
+            # - name: Deploy to DigitalOcean
+            #   uses: digitalocean/app_action@v1
+            #   with:
+            #     app_name: tennis-tournament
+            #     token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+            # Example for AWS ECS
+            # - name: Deploy to AWS ECS
+            #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+            #   with:
+            #     task-definition: task-definition.json
+            #     service: tennis-tournament-service
+            #     cluster: tennis-tournament-cluster
+
+            # Generic Docker deployment via SSH
+            # - name: Deploy via SSH
+            #   uses: appleboy/ssh-action@v1.0.0
+            #   with:
+            #     host: ${{ secrets.DEPLOY_HOST }}
+            #     username: ${{ secrets.DEPLOY_USER }}
+            #     key: ${{ secrets.DEPLOY_SSH_KEY }}
+            #     script: |
+            #       docker pull ghcr.io/${{ github.repository }}:latest
+            #       docker stop tennis-tournament || true
+            #       docker rm tennis-tournament || true
+            #       docker run -d \
+            #         --name tennis-tournament \
+            #         -p 3000:3000 \
+            #         --env-file /path/to/.env \
+            #         ghcr.io/${{ github.repository }}:latest
+
+            - name: Deployment placeholder
+              run: |
+                  echo "🚀 Deployment step - Configure this for your platform"
+                  echo "Image: ghcr.io/${{ github.repository }}:latest"
+                  echo "Environment: ${{ inputs.environment || 'production' }}"
+                  echo ""
+                  echo "See comments in this file for deployment examples"
