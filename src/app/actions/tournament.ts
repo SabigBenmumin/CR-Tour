@@ -149,7 +149,21 @@ export async function deleteTournament(tournamentId: string) {
   try {
     // Delete all related data in a transaction
     await prisma.$transaction(async (tx: any) => {
-      // Delete all matches first
+      // First, get all match IDs for this tournament
+      const matches = await tx.match.findMany({
+        where: { tournamentId },
+        select: { id: true }
+      })
+      const matchIds = matches.map((m: any) => m.id)
+
+      // Delete all witness requests for these matches
+      if (matchIds.length > 0) {
+        await tx.witnessRequest.deleteMany({
+          where: { matchId: { in: matchIds } }
+        })
+      }
+
+      // Delete all matches
       await tx.match.deleteMany({
         where: { tournamentId }
       })
