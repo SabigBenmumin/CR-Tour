@@ -82,3 +82,5 @@ jobs:
                   echo "Environment: ${{ inputs.environment || 'production' }}"
                   echo ""
                   echo "See comments in this file for deployment examples"
+            - name: Trigger Render Deployment
+              run: curl "${{ secrets.RENDER_DEPLOY_HOOK }}"
