@@ -171,4 +171,8 @@ export async function deleteTournament(tournamentId: string) {
     console.error("Failed to delete tournament:", error)
     throw error
   }
+  
+  // Redirect after successful deletion
+  const { redirect } = await import("next/navigation")
+  redirect("/dashboard")
 }

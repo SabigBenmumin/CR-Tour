@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	joinTournament,
 	withdrawFromTournament,
+	deleteTournament,
 } from "@/app/actions/tournament";
 import { startTournament } from "@/app/actions/start-tournament";
 import MatchList from "@/components/match-list";
@@ -126,19 +127,7 @@ export default async function TournamentDetailPage({
 							Manage this tournament.
 						</p>
 					</div>
-					<form
-						action={async () => {
-							"use server";
-							const { deleteTournament } = await import(
-								"@/app/actions/tournament"
-							);
-							await deleteTournament(tournament.id);
-							const { redirect } = await import(
-								"next/navigation"
-							);
-							redirect("/dashboard");
-						}}
-					>
+					<form action={deleteTournament.bind(null, tournament.id)}>
 						<Button type="submit" variant="destructive">
 							Delete Tournament
 						</Button>
