@@ -3,13 +3,13 @@ set -e
 
 echo "🚀 Starting Tennis Tournament Application..."
 
-# Run database migrations
+# Run database migrations using local Prisma installation
 echo "📦 Running database migrations..."
-npx prisma migrate deploy
+node_modules/.bin/prisma migrate deploy
 
 # Generate Prisma Client (in case it's not already generated)
 echo "🔧 Generating Prisma Client..."
-npx prisma generate
+node_modules/.bin/prisma generate
 
 echo "✅ Setup complete! Starting Next.js server..."
 
