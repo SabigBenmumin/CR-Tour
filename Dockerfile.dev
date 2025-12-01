@@ -17,6 +17,7 @@ RUN npm ci
 COPY . .
 
 # Generate Prisma Client
+ENV DATABASE_URL="file:./dev.db"
 RUN npx prisma generate
 
 EXPOSE 3000

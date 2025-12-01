@@ -21,6 +21,8 @@ COPY . .
 RUN npm ci
 
 # Generate Prisma Client
+# Use a dummy DATABASE_URL for build time (actual URL set at runtime)
+ENV DATABASE_URL="file:./dev.db"
 RUN npx prisma generate
 
 # Build Next.js application
