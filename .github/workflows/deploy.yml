@@ -75,12 +75,32 @@ jobs:
             #         --env-file /path/to/.env \
             #         ghcr.io/${{ github.repository }}:latest
 
-            - name: Deployment placeholder
-              run: |
-                  echo "🚀 Deployment step - Configure this for your platform"
-                  echo "Image: ghcr.io/${{ github.repository }}:latest"
-                  echo "Environment: ${{ inputs.environment || 'production' }}"
-                  echo ""
-                  echo "See comments in this file for deployment examples"
             - name: Trigger Render Deployment
-              run: curl "${{ secrets.RENDER_DEPLOY_HOOK }}"
+              id: deploy
+              run: |
+                  echo "🚀 Triggering Render deployment..."
+                  RESPONSE=$(curl -s -w "\n%{http_code}" "${{ secrets.RENDER_DEPLOY_HOOK }}")
+                  HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+
+                  if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+                    echo "✅ Deployment triggered successfully (HTTP $HTTP_CODE)"
+                    echo "status=success" >> $GITHUB_OUTPUT
+                  else
+                    echo "❌ Deployment trigger failed (HTTP $HTTP_CODE)"
+                    echo "status=failed" >> $GITHUB_OUTPUT
+                    exit 1
+                  fi
+
+            - name: Deployment Summary
+              if: always()
+              run: |
+                  echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Environment**: ${{ inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Image**: \`ghcr.io/${{ github.repository }}:latest\`" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Status**: ${{ steps.deploy.outputs.status || 'unknown' }}" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+                  echo "1. Monitor Render dashboard for deployment progress" >> $GITHUB_STEP_SUMMARY
+                  echo "2. Check application logs for any errors" >> $GITHUB_STEP_SUMMARY
+                  echo "3. Verify database migrations completed successfully" >> $GITHUB_STEP_SUMMARY
