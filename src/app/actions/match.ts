@@ -2,8 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { isVerificationRequired } from "@/lib/system-config";
 
 export async function submitMatchResult(
 	matchId: string,
@@ -34,16 +35,36 @@ export async function submitMatchResult(
 		throw new Error("Permission denied");
 	}
 
-	await prisma.match.update({
-		where: { id: matchId },
-		data: {
-			score,
-			winnerId,
-			status: "WAITING_FOR_WITNESS",
-			verificationStatus: "WAITING_FOR_WITNESS",
-			refereeId: isReferee ? session.user.id : undefined, // Set submitter as referee if not already
-		},
-	});
+	const requireVerification = await isVerificationRequired();
+
+	if (requireVerification) {
+		await prisma.match.update({
+			where: { id: matchId },
+			data: {
+				score,
+				winnerId,
+				status: "WAITING_FOR_WITNESS",
+				verificationStatus: "WAITING_FOR_WITNESS",
+				refereeId: isReferee ? session.user.id : undefined,
+			},
+		});
+	} else {
+		// Auto-confirm
+		await prisma.match.update({
+			where: { id: matchId },
+			data: {
+				score,
+				winnerId,
+				status: "COMPLETED",
+				verificationStatus: "CONFIRMED",
+				refereeId: isReferee ? session.user.id : undefined,
+			},
+		});
+
+		// Trigger tournament completion check
+		const { completeTournament } = await import("./tournament-completion");
+		await completeTournament(match.tournamentId);
+	}
 
 	revalidatePath(`/tournaments/${match.tournamentId}`);
 }

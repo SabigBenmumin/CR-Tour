@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,11 @@ import { Input } from "@/components/ui/input";
 import { revalidatePath } from "next/cache";
 import ResetStaminaButton from "@/components/reset-stamina-button";
 import ConfirmActionButton from "@/components/confirm-action-button";
+import SystemConfigSection from "@/components/system-config-section";
+import { getSystemConfig } from "@/lib/system-config";
+import { CONFIG_KEYS } from "@/lib/config-keys";
+
+export const dynamic = "force-dynamic";
 
 async function addStaminaAction(formData: FormData) {
 	"use server";
@@ -114,6 +119,21 @@ export default async function AdminPage() {
 					</div>
 				</CardContent>
 			</Card>
+
+			{/* SYSTEM CONFIGURATION */}
+			{/* SYSTEM CONFIGURATION */}
+			<SystemConfigSection
+				requireStamina={
+					(await getSystemConfig(
+						CONFIG_KEYS.REQUIRE_STAMINA_TO_JOIN
+					)) === "true"
+				}
+				requireVerification={
+					(await getSystemConfig(
+						CONFIG_KEYS.REQUIRE_MATCH_VERIFICATION
+					)) === "true"
+				}
+			/>
 
 			{/* MAINTENANCE ZONE */}
 			<Card className="border-blue-300 bg-blue-50">

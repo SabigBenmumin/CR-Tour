@@ -1,10 +1,11 @@
 "use server"
 
 import { getServerSession } from "next-auth"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { STAMINA_CONFIG } from "@/lib/stamina"
 import { revalidatePath } from "next/cache"
+import { isStaminaRequired } from "@/lib/system-config"
 
 export async function joinTournament(tournamentId: string) {
   const session = await getServerSession(authOptions)
@@ -17,8 +18,10 @@ export async function joinTournament(tournamentId: string) {
   // Transaction: Check stamina, deduct, and join
   try {
     await prisma.$transaction(async (tx: any) => {
+      const requireStamina = await isStaminaRequired()
+
       const user = await tx.user.findUnique({ where: { id: userId } })
-      if (!user || user.stamina < STAMINA_CONFIG.TOURNAMENT_FEE) {
+      if (!user || (requireStamina && user.stamina < STAMINA_CONFIG.TOURNAMENT_FEE)) {
         throw new Error("Insufficient stamina")
       }
 
@@ -40,19 +43,21 @@ export async function joinTournament(tournamentId: string) {
         throw new Error("Already registered")
       }
 
-      // Deduct stamina
-      await tx.user.update({
-        where: { id: userId },
-        data: { stamina: { decrement: STAMINA_CONFIG.TOURNAMENT_FEE } }
-      })
+      // Deduct stamina if required
+      if (requireStamina) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { stamina: { decrement: STAMINA_CONFIG.TOURNAMENT_FEE } }
+        })
 
-      await tx.staminaLog.create({
-        data: {
-          userId,
-          amount: -STAMINA_CONFIG.TOURNAMENT_FEE,
-          reason: `Join Tournament ${tournament.title}`
-        }
-      })
+        await tx.staminaLog.create({
+          data: {
+            userId,
+            amount: -STAMINA_CONFIG.TOURNAMENT_FEE,
+            reason: `Join Tournament ${tournament.title}`
+          }
+        })
+      }
 
       // Join
       await tx.tournamentParticipant.create({

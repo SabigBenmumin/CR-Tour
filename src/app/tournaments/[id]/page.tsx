@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -14,6 +14,8 @@ import { startTournament } from "@/app/actions/start-tournament";
 import MatchList from "@/components/match-list";
 import Standings from "@/components/standings";
 import MapViewerWrapper from "@/components/map-viewer-wrapper";
+
+export const dynamic = "force-dynamic";
 
 export default async function TournamentDetailPage({
 	params,
@@ -64,7 +66,12 @@ export default async function TournamentDetailPage({
 				</div>
 				<div>
 					{canRegister && (
-						<form action={joinTournament.bind(null, tournament.id)}>
+						<form
+							action={async () => {
+								"use server";
+								await joinTournament(tournament.id);
+							}}
+						>
 							<Button type="submit">
 								Join Tournament (2 Stamina)
 							</Button>
@@ -76,16 +83,17 @@ export default async function TournamentDetailPage({
 								Registered
 							</Button>
 							{tournament.status === "OPEN" && (
-								<form
-									action={withdrawFromTournament.bind(
-										null,
-										tournament.id
-									)}
-								>
-									<Button type="submit" variant="outline">
-										Withdraw
-									</Button>
-								</form>
+								// <form
+								// 	action={withdrawFromTournament.bind(
+								// 		null,
+								// 		tournament.id
+								// 	)}
+								// >
+								// 	<Button type="submit" variant="outline">
+								// 		Withdraw
+								// 	</Button>
+								// </form>
+								<div>Withdraw Disabled</div>
 							)}
 						</div>
 					)}
@@ -94,17 +102,18 @@ export default async function TournamentDetailPage({
 					{tournament.status === "OPEN" &&
 						tournament.participants.length >=
 							tournament.minPlayers && (
-							<form
-								action={startTournament.bind(
-									null,
-									tournament.id
-								)}
-								className="inline-block ml-2"
-							>
-								<Button type="submit" variant="destructive">
-									Start Tournament
-								</Button>
-							</form>
+							// <form
+							// 	action={startTournament.bind(
+							// 		null,
+							// 		tournament.id
+							// 	)}
+							// 	className="inline-block ml-2"
+							// >
+							// 	<Button type="submit" variant="destructive">
+							// 		Start Tournament
+							// 	</Button>
+							// </form>
+							<div>Start Disabled</div>
 						)}
 				</div>
 			</header>
